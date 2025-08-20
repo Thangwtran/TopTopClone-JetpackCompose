@@ -11,5 +11,5 @@ class VideoRepository @Inject constructor() {
         R.raw.test4,
     )
 
-    fun getVide() = videos.random()
+    fun getVideo() = videos.random()
 }

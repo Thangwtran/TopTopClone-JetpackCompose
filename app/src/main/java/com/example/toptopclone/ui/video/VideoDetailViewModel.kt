@@ -1,5 +1,6 @@
 package com.example.toptopclone.ui.video
 
+import android.util.Log
 import androidx.annotation.OptIn
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -23,24 +24,47 @@ class VideoDetailViewModel @Inject constructor(
 ) : ViewModel() {
 
     init {
+        Log.d("VideoDetailViewModel", "init: ")
         videoPlayer.repeatMode = Player.REPEAT_MODE_ALL
         videoPlayer.playWhenReady = true
         videoPlayer.prepare()
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        Log.d("VideoDetailViewModel", "release: ")
+        videoPlayer.release()
+    }
+
     private var _uiState = MutableStateFlow<VideoDetailUIState>(VideoDetailUIState.Default)
-     val uiState: StateFlow<VideoDetailUIState>
+    val uiState: StateFlow<VideoDetailUIState>
         get() = _uiState
 
     fun handleAction(action: VideoDetailAction) {
-        when(action){
-            is VideoDetailAction.LoadData ->{
+        when (action) {
+            is VideoDetailAction.LoadData -> {
                 val videoId = action.id
                 loadVideo(videoId)
             }
-            is VideoDetailAction.ToggleVideo -> {
 
+            is VideoDetailAction.ToggleVideo -> {
+                toggleVideo()
             }
+
+        }
+    }
+
+    private fun toggleVideo() {
+        if (videoPlayer.isLoading) {
+
+        } else {
+//            if (videoPlayer.isPlaying) {
+//                videoPlayer.pause()
+//            } else {
+//                videoPlayer.play()
+//            }
+        videoPlayer.playWhenReady = !videoPlayer.playWhenReady
+
         }
     }
 
@@ -48,19 +72,25 @@ class VideoDetailViewModel @Inject constructor(
         _uiState.value = VideoDetailUIState.Loading
         viewModelScope.launch {
             delay(100L)
-            val videoRes = videoRepository.getVide()
+            val videoRes = videoRepository.getVideo()
             playVideo(videoRes)
             _uiState.value = VideoDetailUIState.Success
         }
     }
 
     @OptIn(UnstableApi::class)
-    private fun playVideo(videoResId:Int){
+    private fun playVideo(videoResId: Int) {
         val videoUri = RawResourceDataSource.buildRawResourceUri(videoResId)
         val mediaItem = MediaItem.fromUri(videoUri)
         videoPlayer.setMediaItem(mediaItem)
         videoPlayer.play()
     }
+
+    private fun onDispose(){
+        videoPlayer.release()
+    }
+
+
 }
 
 // MVVM MVI
@@ -71,7 +101,7 @@ sealed interface VideoDetailUIState {
     data class Error(val message: String) : VideoDetailUIState
 }
 
-sealed class VideoDetailAction{
-    data class LoadData(val id: Int): VideoDetailAction()
-    object ToggleVideo: VideoDetailAction()
+sealed class VideoDetailAction {
+    data class LoadData(val id: Int) : VideoDetailAction()
+    object ToggleVideo : VideoDetailAction()
 }
